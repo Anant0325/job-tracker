@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.Personal_Project.job_tracker.model.Users;
 import com.Personal_Project.job_tracker.repo.UserRepo;
+import com.Personal_Project.job_tracker.service.JwtService;
 
 @RestController
 @RequestMapping("/auth")
@@ -18,10 +19,12 @@ public class UserController {
 	
 	private final UserRepo userRepo;
 	private final PasswordEncoder passwordEncoder;
+	private final JwtService jwtService;
 	
-	public UserController(UserRepo userRepo, PasswordEncoder passwordEncoder) {
+	public UserController(UserRepo userRepo, PasswordEncoder passwordEncoder, JwtService jwtService) {
 		this.userRepo = userRepo;
 		this.passwordEncoder = passwordEncoder;
+		this.jwtService = jwtService;
 	}
 	
 	
@@ -49,6 +52,23 @@ public class UserController {
 	public MeResponse getCurrentUser(@AuthenticationPrincipal UserDetails user) {
 	    return new MeResponse(user.getUsername());
 	}
+	@PostMapping("/login")
+	public String login(@RequestParam String email, @RequestParam String password) {
+	    Users user = userRepo.findByEmail(email);
+	    if (user == null) {
+	        return "User not found";
+	    }
+
+	    if (passwordEncoder.matches(password, user.getPasswordHash())) {
+	        // use the instance, not the class
+	        String token = jwtService.generateToken(user.getEmail());
+	        return "Bearer " + token;
+	    } else {
+	        return "Invalid credentials";
+	    }
+	}
+
+
 
 	
 	
